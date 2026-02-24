@@ -1,108 +1,79 @@
-# Plane Strain J2 Plasticity (Q4 FEM, Global Newton)
+Plane Strain J2 Plasticity (Q4 Finite Element Solver)
+Author: Habib Pouriayevali
 
-**Author:** Habib Pouriayevali
+Overview
+--------
+This project implements a small-strain, plane-strain J2 (von Mises) elastoplastic finite element solver in Python.
 
-A small-strain, plane-strain **J2 (von Mises) elastoplastic** finite element solver written in Python.  
-The implementation includes **radial return mapping**, isotropic hardening, sparse global assembly, and a global Newton scheme.
+The implementation includes:
+- Q4 bilinear quadrilateral elements
+- 2x2 Gauss integration
+- J2 plasticity with isotropic hardening
+- Backward-Euler radial return mapping
+- Sparse global stiffness assembly (SciPy)
+- Nonlinear global Newton solver with damping
 
----
+The solver demonstrates a complete nonlinear FEM workflow with local constitutive updates at Gauss points and global equilibrium iterations.
 
-## Overview
-
-This code solves a 2D plane-strain tension problem using:
-
-- **Q4 bilinear quadrilateral elements**
-- **2×2 Gauss integration**
-- **Small-strain J2 plasticity** with **isotropic hardening**
-- **Backward-Euler radial return** (local update at Gauss points)
-- **Sparse global stiffness assembly** and a global Newton iteration (with damping)
-
-Outputs include:
-- Traction vs. tip displacement curve
-- von Mises stress field on a deformed mesh
-
----
-
-## Governing Equations
-
-### Kinematics (small strain, plane strain)
-Strain vector used:
-\[
-\varepsilon_4 = [\varepsilon_{xx}, \varepsilon_{yy}, \varepsilon_{zz}, \gamma_{xy}]
-\]
-with plane strain condition \(\varepsilon_{zz}=0\) (computed implicitly through constitutive coupling).
-
-### Linear elasticity (plane strain)
-\[
-\sigma = C : (\varepsilon - \varepsilon^p)
-\]
-
-### J2 Plasticity + Isotropic Hardening
-Yield function:
-\[
-f = \sigma_{eq} - (\sigma_{y0} + H \alpha) \le 0
-\]
-with accumulated plastic strain \(\alpha\).
-
-Equivalent von Mises stress:
-\[
-\sigma_{eq} = \sqrt{\frac{3}{2} \, s:s}
-\]
-
-Backward-Euler radial return update is used when \(f>0\).
-
----
-
-## Numerical Implementation
-
-### Elements and Integration
-- Q4 bilinear elements
-- 2×2 Gauss quadrature
-
-### Local constitutive update
-At each Gauss point:
-- trial stress
-- yield check
-- radial return mapping
-- update of deviatoric plastic strain and accumulated plastic strain
-
-### Global solve (nonlinear)
-- Assemble internal force \(F_{int}\) and tangent \(K\)
-- Residual: \(R = F_{int} - F_{ext}\)
-- Solve for increment: \(K \Delta u = -R\)
-- Apply damping to improve robustness near yielding
-
----
-
-## Problem Setup (Demo)
-
-- Rectangular plate: \(L_x = 1.0\), \(L_y = 0.2\)
+Physical Model
+--------------
+Rectangular plate under uniaxial tension:
 - Left edge fully fixed
-- Uniform traction \(T_x\) applied on right edge
-- Load stepping from 0 → \(T_{x,max}\)
+- Uniform traction applied on the right edge
+- Plane strain assumption
+- Small strain kinematics
 
-Material:
-- \(E = 210\,\text{GPa}\)
-- \(\nu = 0.30\)
-- \(\sigma_{y0} = 250\,\text{MPa}\)
-- \(H = 1.0\,\text{GPa}\)
+Example material parameters:
+E      = 210 GPa
+nu     = 0.30
+sigy0  = 250 MPa
+H      = 1.0 GPa
 
----
+Load stepping is used to capture nonlinear elastoplastic behavior.
 
-## Results
+Governing Equations
+-------------------
+Elasticity (Plane Strain):
+    sigma = C : (epsilon - epsilon_p)
 
-Example: von Mises stress plotted on the deformed mesh (scaled).
+Yield Function (J2 Plasticity):
+    f = sigma_eq - (sigy0 + H * alpha)
 
-![von Mises on deformed mesh](von_mises_deformed.png)
+Equivalent Stress:
+    sigma_eq = sqrt(3/2 * s:s)
 
----
+Backward-Euler radial return mapping is applied when yielding occurs.
 
-## Dependencies
+Numerical Implementation
+------------------------
+- Structured rectangular mesh
+- Local stress update at each Gauss point
+- Internal force assembly
+- Residual: R = Fint - Fext
+- Solve K * du = -R using sparse linear solver
+- Damped Newton updates
 
-- numpy
-- scipy
-- matplotlib
+Note:
+Under plane strain:
+    epsilon_zz = 0
+    sigma_zz is generally NOT zero.
+
+The current implementation uses a modified Newton approach
+(elastic tangent for robustness).
+
+Outputs
+-------
+- Traction vs. tip displacement curve
+- von Mises stress field on deformed mesh
+
+Dependencies
+------------
+numpy
+scipy
+matplotlib
 
 Install:
-```bash
 pip install numpy scipy matplotlib
+
+Run:
+python j2_plane_strain_q4.py
